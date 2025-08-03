@@ -16,8 +16,8 @@ return [
         'lifetime' => (int)($_ENV['SESSION_LIFETIME'] ?? 3600),
     ],
     'admin' => [
-        'username' => $_ENV['ADMIN_USERNAME'] ?? 'admin',
-        'password' => $_ENV['ADMIN_PASSWORD'] ?? 'admin123',
+        'username' => $_ENV['ADMIN_USERNAME'] ?? '...',
+        'password' => $_ENV['ADMIN_PASSWORD'] ?? '...',
     ],
     'logger' => [
         'level' => $_ENV['LOG_LEVEL'] ?? 'debug',
