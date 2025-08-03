@@ -1,0 +1,259 @@
+{% extends "layout/app.twig" %}
+
+{% block title %}Dodaj mieszkanie - {{ parent() }}{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <!-- Page header -->
+        <div class="mb-8">
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-4">
+                    <li>
+                        <a href="/flats" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-building mr-1"></i>
+                            Mieszkania
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">Dodaj mieszkanie</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">
+                <i class="fas fa-plus mr-2 text-primary-600"></i>
+                Dodaj nowe mieszkanie
+            </h2>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white shadow rounded-lg fade-in">
+            <form method="POST" action="/flats" class="space-y-6 p-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <!-- Basic information -->
+                <div>
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
+                        <i class="fas fa-info-circle mr-2 text-primary-600"></i>
+                        Podstawowe informacje
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700">
+                                Nazwa mieszkania *
+                            </label>
+                            <div class="mt-1">
+                                <input type="text" name="name" id="name" required
+                                       class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                       placeholder="np. Mieszkanie 1, Apartament A, itp.">
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <!-- Utilities -->
+                <div>
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
+                        <i class="fas fa-cogs mr-2 text-primary-600"></i>
+                        Liczniki mediów
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Dodaj liczniki mediów dla tego mieszkania. Możesz dodać wiele liczników tego samego typu.
+                    </p>
+                    
+                    <div id="utilities-container">
+                        <!-- Domyślny licznik -->
+                        <div class="utility-item bg-gray-50 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-medium text-gray-900">Licznik</h4>
+                                <button type="button" onclick="removeUtility(this)" class="text-red-600 hover:text-red-800 hidden">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Typ medium *</label>
+                                    <select name="utilities[0][type]" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" onchange="updateRatePlaceholder(this)">
+                                        <option value="">Wybierz typ</option>
+                                        <option value="gas" data-default-rate="2.45">🔥 Gaz</option>
+                                        <option value="electricity" data-default-rate="0.65">⚡ Prąd</option>
+                                        <option value="cold_water" data-default-rate="4.20">💧 Woda zimna</option>
+                                        <option value="hot_water" data-default-rate="18.50">🔴 Woda ciepła</option>
+        
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nazwa/Opis</label>
+                                    <input type="text" name="utilities[0][name]" placeholder="np. Kuchnia, Łazienka, Główny..."
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                    <p class="text-xs text-gray-500 mt-1">Opcjonalnie - pomaga rozróżnić liczniki</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stan początkowy</label>
+                                    <input type="number" name="utilities[0][initial_reading]" step="0.001" min="0" value="0.00" placeholder="0.00"
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                    <p class="text-xs text-gray-500 mt-1">Odczyt początkowy licznika</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Opłata stała/przesyłowa</label>
+                                    <input type="number" name="utilities[0][fixed_cost]" step="0.001" min="0" value="0.00" placeholder="0.00"
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                    <p class="text-xs text-gray-500 mt-1">Abonament, opłata przesyłowa itp.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stawka (zł/jednostka)</label>
+                                    <input type="number" name="utilities[0][rate]" step="0.001" min="0" placeholder="Domyślna"
+                                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                    <p class="text-xs text-gray-500 mt-1">Pozostaw puste dla domyślnej stawki</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addUtility()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <i class="fas fa-plus mr-2"></i>
+                        Dodaj kolejny licznik
+                    </button>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="/flats" 
+                       class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>
+                        Anuluj
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <i class="fas fa-save mr-2"></i>
+                        Zapisz mieszkanie
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let utilityCounter = 1;
+
+function addUtility() {
+    const container = document.getElementById('utilities-container');
+    const newUtility = document.createElement('div');
+    newUtility.className = 'utility-item bg-gray-50 rounded-lg p-4 mb-4';
+    newUtility.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="font-medium text-gray-900">Licznik</h4>
+            <button type="button" onclick="removeUtility(this)" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Typ medium *</label>
+                <select name="utilities[${utilityCounter}][type]" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" onchange="updateRatePlaceholder(this)">
+                    <option value="">Wybierz typ</option>
+                    <option value="gas" data-default-rate="2.45">🔥 Gaz</option>
+                    <option value="electricity" data-default-rate="0.65">⚡ Prąd</option>
+                    <option value="cold_water" data-default-rate="4.20">💧 Woda zimna</option>
+                    <option value="hot_water" data-default-rate="18.50">🔴 Woda ciepła</option>
+                    
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nazwa/Opis</label>
+                <input type="text" name="utilities[${utilityCounter}][name]" placeholder="np. Kuchnia, Łazienka, Główny..."
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                <p class="text-xs text-gray-500 mt-1">Opcjonalnie - pomaga rozróżnić liczniki</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Stan początkowy</label>
+                <input type="number" name="utilities[${utilityCounter}][initial_reading]" step="0.001" min="0" value="0.00" placeholder="0.00"
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                <p class="text-xs text-gray-500 mt-1">Odczyt początkowy licznika</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Opłata stała/przesyłowa</label>
+                <input type="number" name="utilities[${utilityCounter}][fixed_cost]" step="0.001" min="0" value="0.00" placeholder="0.00"
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                <p class="text-xs text-gray-500 mt-1">Abonament, opłata przesyłowa itp.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Stawka (zł/jednostka)</label>
+                <input type="number" name="utilities[${utilityCounter}][rate]" step="0.001" min="0" placeholder="Domyślna"
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                <p class="text-xs text-gray-500 mt-1">Pozostaw puste dla domyślnej stawki</p>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newUtility);
+    utilityCounter++;
+    
+    // Pokaż przycisk usuwania dla pierwszego elementu jeśli jest więcej niż jeden
+    updateRemoveButtons();
+}
+
+function removeUtility(button) {
+    const utilityItem = button.closest('.utility-item');
+    utilityItem.remove();
+    updateRemoveButtons();
+    renumberUtilities();
+}
+
+function updateRemoveButtons() {
+    const utilities = document.querySelectorAll('.utility-item');
+    utilities.forEach((utility, index) => {
+        const removeButton = utility.querySelector('button[onclick*="removeUtility"]');
+        if (utilities.length > 1) {
+            removeButton.classList.remove('hidden');
+        } else {
+            removeButton.classList.add('hidden');
+        }
+    });
+}
+
+function renumberUtilities() {
+    const utilities = document.querySelectorAll('.utility-item');
+    utilities.forEach((utility, index) => {
+        const title = utility.querySelector('h4');
+        title.textContent = `Licznik`;
+        
+        // Zaktualizuj nazwy pól
+        const typeSelect = utility.querySelector('select');
+        const nameInput = utility.querySelector('input[type="text"]');
+        const initialReadingInput = utility.querySelector('input[name*="[initial_reading]"]');
+        const fixedCostInput = utility.querySelector('input[name*="[fixed_cost]"]');
+        const rateInput = utility.querySelector('input[name*="[rate]"]');
+        
+        typeSelect.name = `utilities[${index}][type]`;
+        nameInput.name = `utilities[${index}][name]`;
+        initialReadingInput.name = `utilities[${index}][initial_reading]`;
+        fixedCostInput.name = `utilities[${index}][fixed_cost]`;
+        rateInput.name = `utilities[${index}][rate]`;
+    });
+    
+    utilityCounter = utilities.length;
+}
+
+function updateRatePlaceholder(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const defaultRate = selectedOption.getAttribute('data-default-rate');
+    const utilityItem = selectElement.closest('.utility-item');
+    const rateInput = utilityItem.querySelector('input[type="number"]');
+    
+    if (defaultRate && rateInput) {
+        rateInput.placeholder = `Domyślna: ${defaultRate} zł`;
+    } else if (rateInput) {
+        rateInput.placeholder = 'Domyślna';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "layout/app.twig" %}
+
+{% block title %}{{ flat.name }} - {{ parent() }}{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <!-- Page header -->
+        <div class="mb-8">
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-4">
+                    <li>
+                        <a href="/flats" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-building mr-1"></i>
+                            Mieszkania
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">{{ flat.name }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                        <i class="fas fa-home mr-2 text-primary-600"></i>
+                        {{ flat.name }}
+                    </h2>
+                </div>
+                <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
+                    <a href="/flats/{{ flat.id }}/edit" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <i class="fas fa-edit mr-2"></i>
+                        Edytuj
+                    </a>
+                    <a href="/flats/{{ flat.id }}/bills/create" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nowe rozliczenie
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flat details -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8 fade-in">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    <i class="fas fa-info-circle mr-2 text-primary-600"></i>
+                    Informacje o mieszkaniu
+                </h3>
+            </div>
+            <div class="border-t border-gray-200">
+                <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Nazwa mieszkania
+                        </dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            {{ flat.name }}
+                        </dd>
+                    </div>
+
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Liczniki mediów
+                        </dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            {% if flat.utilities is empty %}
+                                <span class="text-gray-400 italic">Brak skonfigurowanych liczników</span>
+                            {% else %}
+                                <div class="space-y-2">
+                                    {% for utilityId, utility in flat.utilities %}
+                                        <div class="inline-flex items-center px-3 py-1.5 rounded-md text-sm bg-blue-50 text-blue-800 border border-blue-200">
+                                            {% if utility.type == 'gas' %}
+                                                <i class="fas fa-fire mr-2 text-orange-500"></i>Gaz
+                                            {% elseif utility.type == 'electricity' %}
+                                                <i class="fas fa-bolt mr-2 text-yellow-500"></i>Prąd
+                                            {% elseif utility.type == 'cold_water' %}
+                                                <i class="fas fa-tint mr-2 text-blue-500"></i>Woda zimna
+                                            {% elseif utility.type == 'hot_water' %}
+                                                <i class="fas fa-tint mr-2 text-red-500"></i>Woda ciepła
+
+                                            {% else %}
+                                                <i class="fas fa-cog mr-2"></i>{{ utility.type|title }}
+                                            {% endif %}
+                                            {% if utility.name %}
+                                                <span class="font-medium"> / {{ utility.name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <a href="/flats/{{ flat.id }}/bills" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-200 fade-in">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-invoice text-primary-600 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Rozliczenia</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ bills|length }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>Zobacz wszystkie rozliczenia</span>
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/flats/{{ flat.id }}/history" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-200 fade-in">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chart-line text-green-600 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Historia</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ history|length }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>Wykresy i historia</span>
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/flats/{{ flat.id }}/bills/create" class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-200 fade-in">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-plus text-blue-600 text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Nowe</dt>
+                                <dd class="text-lg font-medium text-gray-900">Rozliczenie</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span>Utwórz rozliczenie</span>
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        
+    </div>
+</div>
+{% endblock %}

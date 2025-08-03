@@ -1,0 +1,948 @@
+{% extends "layout/app.twig" %}
+
+{% block title %}Nowe rozliczenie - {{ flat.name }} - {{ parent() }}{% endblock %}
+
+{% block head %}
+<style>
+/* Niestandardowy kalendarz polski */
+.custom-month-picker {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.custom-month-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.custom-month-picker-year {
+    font-weight: 600;
+    color: #374151;
+}
+
+.custom-month-picker-nav {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.custom-month-picker-nav button {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.custom-month-picker-nav button:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.custom-month-picker-nav button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.custom-month-picker-months {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    padding: 0.5rem;
+}
+
+.custom-month-picker-month {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.custom-month-picker-month:hover {
+    background: #f3f4f6;
+}
+
+.custom-month-picker-month.selected {
+    background: #3b82f6;
+    color: white;
+}
+
+.custom-month-picker-month.current {
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 600;
+}
+
+.custom-month-picker-month.current.selected {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Ukryj oryginalny input */
+input[type="month"][style*="display: none"] {
+    display: none !important;
+}
+
+/* Animacja dla kalendarza */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.custom-month-picker.show {
+    animation: fadeInDown 0.2s ease-out;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <!-- Page header -->
+        <div class="mb-8">
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-4">
+                    <li>
+                        <a href="/flats" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-building mr-1"></i>
+                            Mieszkania
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <a href="/flats/{{ flat.id }}" class="text-gray-400 hover:text-gray-500">{{ flat.name }}</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <a href="/flats/{{ flat.id }}/bills" class="text-gray-400 hover:text-gray-500">Rozliczenia</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">Nowe rozliczenie</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">
+                <i class="fas fa-plus mr-2 text-primary-600"></i>
+                Nowe rozliczenie
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Utwórz nowe rozliczenie mediów dla mieszkania {{ flat.name }}
+            </p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white shadow rounded-lg fade-in">
+            <form method="POST" action="/flats/{{ flat.id }}/bills" class="space-y-8 p-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <!-- Period -->
+                <div>
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
+                        <i class="fas fa-calendar mr-2 text-primary-600"></i>
+                        Okres rozliczeniowy
+                    </h3>
+                    
+                    <div class="max-w-xs">
+                        <label for="period" class="block text-sm font-medium text-gray-700">
+                            Miesiąc rozliczenia *
+                        </label>
+                        <div class="mt-1 relative">
+                            <input type="month" name="period" id="period" required value="{{ current_period }}"
+                                   class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                   lang="pl" style="display: none;">
+                            <button type="button" id="custom-month-picker" 
+                                    class="w-full text-left px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <span id="selected-period-display">Wybierz miesiąc</span>
+                                <i class="fas fa-chevron-down float-right mt-1 text-gray-400"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">Wybierz miesiąc, za który tworzone jest rozliczenie</p>
+                    </div>
+                </div>
+
+                <!-- Utilities -->
+                {% if flat.utilities is not empty %}
+                    <div>
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
+                            <i class="fas fa-cogs mr-2 text-primary-600"></i>
+                            Odczyty i koszty mediów
+                        </h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Wprowadź odczyty liczników i koszty dla każdego medium
+                        </p>
+                        
+                        <div class="space-y-6">
+                            {% for utilityId, utility in flat.utilities %}
+                                <div class="bg-gray-50 rounded-lg p-6">
+                                    <div class="flex items-center mb-4">
+                                        {% if utility.type == 'gas' %}
+                                            <i class="fas fa-fire text-orange-500 text-xl mr-3"></i>
+                                            <h4 class="text-lg font-medium text-gray-900">Gaz</h4>
+                                        {% elseif utility.type == 'electricity' %}
+                                            <i class="fas fa-bolt text-yellow-500 text-xl mr-3"></i>
+                                            <h4 class="text-lg font-medium text-gray-900">Prąd</h4>
+                                        {% elseif utility.type == 'cold_water' %}
+                                            <i class="fas fa-tint text-blue-500 text-xl mr-3"></i>
+                                            <h4 class="text-lg font-medium text-gray-900">Woda zimna</h4>
+                                        {% elseif utility.type == 'hot_water' %}
+                                            <i class="fas fa-tint text-red-500 text-xl mr-3"></i>
+                                            <h4 class="text-lg font-medium text-gray-900">Woda ciepła</h4>
+
+                                        {% else %}
+                                            <i class="fas fa-cog text-gray-500 text-xl mr-3"></i>
+                                            <h4 class="text-lg font-medium text-gray-900">{{ utility.type|title }}</h4>
+                                        {% endif %}
+                                        {% if utility.name %}
+                                            <span class="ml-2 text-sm text-gray-600 bg-white px-2 py-1 rounded">{{ utility.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                        <div>
+                                            <label for="reading_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
+                                                Odczyt licznika *
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" name="readings[{{ utilityId }}]" id="reading_{{ utilityId }}" 
+                                                       step="0.001" min="0" required
+                                                       class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
+                                                       placeholder="0.00"
+                                                       data-utility-type="{{ utility.type }}"
+                                                       onchange="calculateCosts()">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-gray-500 sm:text-sm">
+                                                        {% if utility.type in ['cold_water', 'hot_water'] %}m³
+                                                        {% elseif utility.type == 'gas' %}m³
+                                                        {% elseif utility.type == 'electricity' %}kWh
+
+                                                        {% else %}jednostka
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                {% if previous_readings[utilityId] is defined %}
+                                                    Poprzedni odczyt: {{ previous_readings[utilityId]|number_format(2, ',', ' ') }}
+                                                {% else %}
+                                                    Stan początkowy: {{ utility.initial_reading|number_format(2, ',', ' ') }}
+                                                {% endif %}
+                                                {% if utility.type in ['cold_water', 'hot_water'] %}m³
+                                                {% elseif utility.type == 'gas' %}m³
+                                                {% elseif utility.type == 'electricity' %}kWh
+                                                {% else %}jednostka
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label for="consumption_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
+                                                Zużycie
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" id="consumption_{{ utilityId }}" readonly
+                                                       class="bg-gray-50 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
+                                                       placeholder="0.00">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-gray-500 sm:text-sm">
+                                                        {% if utility.type in ['cold_water', 'hot_water'] %}m³
+                                                        {% elseif utility.type == 'gas' %}m³
+                                                        {% elseif utility.type == 'electricity' %}kWh
+
+                                                        {% else %}jednostka
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                Stawka: {{ (utility.rate ?? utility_rates[utility.type])|number_format(2, ',', ' ') }} zł/
+                                                {% if utility.type in ['cold_water', 'hot_water'] %}m³
+                                                {% elseif utility.type == 'gas' %}m³
+                                                {% elseif utility.type == 'electricity' %}kWh
+
+                                                {% else %}jednostka
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        
+                                        {% if utility.type != 'cold_water' %}
+                                        <div>
+                                            <label for="fixed_cost_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
+                                                Opłata stała/przesyłowa
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" name="fixed_costs[{{ utilityId }}]" id="fixed_cost_{{ utilityId }}" 
+                                                       step="0.001" min="0" value="{{ utility.fixed_cost ?? '0' }}"
+                                                       class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
+                                                       placeholder="0.00"
+                                                       onchange="calculateCosts()">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-gray-500 sm:text-sm">zł</span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">Abonament, opłata przesyłowa itp.</p>
+                                        </div>
+                                        {% else %}
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">
+                                                Opłata stała/przesyłowa
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="number" readonly value="0.00"
+                                                       class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md cursor-not-allowed"
+                                                       placeholder="0.00">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-gray-500 sm:text-sm">zł</span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">Brak dla wody zimnej</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">
+                                                Suma licznika
+                                            </label>
+                                            <div class="mt-1 relative rounded-md shadow-sm">
+                                                <input type="text" id="total_cost_{{ utilityId }}" readonly tabindex="-1"
+                                                       class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md font-medium text-gray-900 cursor-default"
+                                                       value="0 zł" disabled>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fas fa-calculator text-gray-400 text-sm"></i>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1">Zużycie + opłata stała</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Grouped utility totals -->
+                        <div class="mt-6 bg-blue-50 rounded-lg p-4" id="grouped-totals" style="display: none;">
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Sumy według typu medium:</h3>
+                            <div id="grouped-totals-content" class="space-y-2">
+                                <!-- Grouped totals will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Total cost -->
+                        <div class="mt-6 bg-primary-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-lg font-medium text-gray-900">Łączny koszt:</span>
+                                <span class="text-xl font-bold text-primary-600" id="total-cost">0,00 zł</span>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">
+                                    Brak skonfigurowanych mediów
+                                </h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <p>
+                                        To mieszkanie nie ma skonfigurowanych żadnych mediów. 
+                                        <a href="/flats/{{ flat.id }}/edit" class="font-medium underline hover:text-yellow-600">
+                                            Edytuj mieszkanie
+                                        </a> aby dodać media.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="/flats/{{ flat.id }}/bills" 
+                       class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i>
+                        Anuluj
+                    </a>
+                    {% if flat.utilities is not empty %}
+                        <button type="button" onclick="resetForm()"
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                            <i class="fas fa-undo mr-2"></i>
+                            Resetuj pola
+                        </button>
+                        <button type="submit" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                            <i class="fas fa-save mr-2"></i>
+                            Zapisz rozliczenie
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dane z serwera
+const utilityRates = {{ utility_rates|json_encode|raw }};
+const utilities = {{ flat.utilities|json_encode|raw }};
+const previousReadings = {{ previous_readings|json_encode|raw }};
+
+function calculateCosts() {
+    let total = 0;
+    let groupedTotals = {};
+    let utilityTypeNames = {
+        'gas': '🔥 Gaz',
+        'electricity': '⚡ Prąd', 
+        'cold_water': '💧 Woda zimna',
+        'hot_water': '🔴 Woda ciepła'
+    };
+    
+    // Oblicz koszty dla każdego licznika
+    document.querySelectorAll('input[name^="readings["]').forEach(readingInput => {
+        const utilityId = readingInput.name.match(/readings\[([^\]]+)\]/)[1];
+        const utilityType = readingInput.dataset.utilityType;
+        const currentReading = parseFloat(readingInput.value) || 0;
+        const utility = utilities[utilityId];
+        // Użyj poprzedniego odczytu jeśli istnieje, w przeciwnym razie stan początkowy
+        const previousReading = previousReadings[utilityId] || (utility ? (utility.initial_reading || 0) : 0);
+        const consumption = Math.max(0, currentReading - previousReading);
+        
+        // Oblicz koszt zużycia - użyj indywidualnej stawki licznika lub domyślnej dla typu
+        const rate = (utility && utility.rate !== null) ? utility.rate : (utilityRates[utilityType] || 0);
+        let utilityCost = consumption * rate;
+        
+        // Dodaj opłatę stałą (oprócz wody zimnej)
+        if (utilityType !== 'cold_water') {
+            const fixedCostInput = document.querySelector(`input[name="fixed_costs[${utilityId}]"]`);
+            if (fixedCostInput) {
+                const fixedCost = parseFloat(fixedCostInput.value) || 0;
+                utilityCost += fixedCost;
+            }
+        }
+        
+        // Zaktualizuj pola wyświetlania
+        const consumptionField = document.getElementById(`consumption_${utilityId}`);
+        if (consumptionField) {
+            consumptionField.value = consumption.toFixed(2);
+        }
+        
+        const totalCostField = document.getElementById(`total_cost_${utilityId}`);
+        if (totalCostField) {
+            const roundedCost = Math.round(utilityCost);
+            totalCostField.value = roundedCost.toLocaleString('pl-PL') + ' zł';
+        }
+        
+        // Dodaj do sumy grupowej
+        if (!groupedTotals[utilityType]) {
+            groupedTotals[utilityType] = {
+                consumption: 0,
+                cost: 0,
+                count: 0,
+                meters: []
+            };
+        }
+        groupedTotals[utilityType].consumption += consumption;
+        groupedTotals[utilityType].cost += utilityCost;
+        groupedTotals[utilityType].count += 1;
+        groupedTotals[utilityType].meters.push({
+            name: utility.name || `Licznik #${utilityId}`,
+            consumption: consumption,
+            cost: utilityCost
+        });
+        
+        total += utilityCost;
+    });
+    
+    // Wyświetl sumy grupowe
+    updateGroupedTotals(groupedTotals, utilityTypeNames);
+    
+    // Zaktualizuj łączną sumę
+    document.getElementById('total-cost').textContent = 
+        total.toLocaleString('pl-PL', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        }) + ' zł';
+}
+
+function updateGroupedTotals(groupedTotals, utilityTypeNames) {
+    const container = document.getElementById('grouped-totals-content');
+    const groupedSection = document.getElementById('grouped-totals');
+    
+    // Sprawdź czy są multiple liczniki tego samego typu
+    const hasMultipleOfSameType = Object.values(groupedTotals).some(group => group.count > 1);
+    
+    if (!hasMultipleOfSameType) {
+        groupedSection.style.display = 'none';
+        return;
+    }
+    
+    groupedSection.style.display = 'block';
+    container.innerHTML = '';
+    
+    Object.entries(groupedTotals).forEach(([type, data]) => {
+        if (data.count > 1) {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'bg-white rounded-lg p-3 border border-blue-200';
+            
+            let metersHtml = data.meters.map(meter => 
+                `<div class="text-xs text-gray-600 ml-4">
+                    • ${meter.name}: ${meter.consumption.toFixed(2)} ${getUnitForType(type)} = ${Math.round(meter.cost).toLocaleString('pl-PL')} zł
+                </div>`
+            ).join('');
+            
+            groupDiv.innerHTML = `
+                <div class="flex justify-between items-center font-medium text-gray-900">
+                    <span>${utilityTypeNames[type] || type} (${data.count} liczniki)</span>
+                    <span class="text-blue-600">${Math.round(data.cost).toLocaleString('pl-PL')} zł</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1">
+                    Łączne zużycie: ${data.consumption.toFixed(2)} ${getUnitForType(type)}
+                </div>
+                <div class="mt-2">
+                    ${metersHtml}
+                </div>
+            `;
+            
+            container.appendChild(groupDiv);
+        }
+    });
+}
+
+function getUnitForType(type) {
+    switch(type) {
+        case 'cold_water':
+        case 'hot_water':
+        case 'gas':
+            return 'm³';
+        case 'electricity':
+            return 'kWh';
+        default:
+            return 'jednostka';
+    }
+}
+
+// Funkcje auto-zapisywania
+function getStorageKey(fieldName) {
+    const flatId = '{{ flat.id }}';
+    const period = document.querySelector('input[name="period"]')?.value || 'current';
+    return `bill_draft_${flatId}_${period}_${fieldName}`;
+}
+
+function saveFieldValue(fieldName, value) {
+    localStorage.setItem(getStorageKey(fieldName), value);
+}
+
+function loadFieldValue(fieldName) {
+    return localStorage.getItem(getStorageKey(fieldName));
+}
+
+function clearDraftData() {
+    const flatId = '{{ flat.id }}';
+    const period = document.querySelector('input[name="period"]')?.value || 'current';
+    const prefix = `bill_draft_${flatId}_${period}_`;
+    
+    // Usuń wszystkie klucze związane z tym formularzem
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(prefix)) {
+            localStorage.removeItem(key);
+        }
+    });
+}
+
+function setupAutoSave() {
+    // Auto-zapisywanie dla odczytów liczników
+    document.querySelectorAll('input[name^="readings["]').forEach(input => {
+        const fieldName = input.name;
+        
+        // Przywróć zapisaną wartość
+        const savedValue = loadFieldValue(fieldName);
+        if (savedValue && !input.value) {
+            input.value = savedValue;
+        }
+        
+        // Zapisuj przy każdej zmianie
+        input.addEventListener('input', function() {
+            saveFieldValue(fieldName, this.value);
+            calculateCosts();
+        });
+    });
+    
+    // Auto-zapisywanie dla opłat stałych
+    document.querySelectorAll('input[name^="fixed_costs["]').forEach(input => {
+        const fieldName = input.name;
+        
+        // Przywróć zapisaną wartość
+        const savedValue = loadFieldValue(fieldName);
+        if (savedValue && input.value === '0') {
+            input.value = savedValue;
+        }
+        
+        // Zapisuj przy każdej zmianie
+        input.addEventListener('input', function() {
+            saveFieldValue(fieldName, this.value);
+            calculateCosts();
+        });
+    });
+    
+    // Wyczyść dane po pomyślnym zapisaniu formularza
+    document.querySelector('form').addEventListener('submit', function() {
+        clearDraftData();
+    });
+}
+
+// Funkcja resetowania formularza
+function resetForm() {
+    if (confirm('Czy na pewno chcesz zresetować wszystkie pola do wartości domyślnych? Wszystkie wprowadzone dane zostaną utracone.')) {
+        // Resetuj pole okresu do aktualnego miesiąca
+        const periodInput = document.querySelector('input[name="period"]');
+        if (periodInput) {
+            const now = new Date();
+            const currentPeriod = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            periodInput.value = currentPeriod;
+            
+            // Zaktualizuj niestandardowy kalendarz
+            if (window.monthPicker) {
+                window.monthPicker.selectedYear = now.getFullYear();
+                window.monthPicker.selectedMonth = now.getMonth();
+                window.monthPicker.updateDisplay();
+            }
+        }
+        
+        // Resetuj wszystkie pola odczytów liczników
+        document.querySelectorAll('input[name^="readings["]').forEach(input => {
+            input.value = '';
+            // Ustaw placeholder na 0.00
+            input.placeholder = '0.00';
+        });
+        
+        // Resetuj wszystkie pola opłat stałych
+        document.querySelectorAll('input[name^="fixed_costs["]').forEach(input => {
+            input.value = '0';
+        });
+        
+        // Wyczyść dane auto-zapisywania
+        clearDraftData();
+        
+        // Przelicz koszty
+        calculateCosts();
+        
+        // Pokaż komunikat o sukcesie
+        showResetSuccessMessage();
+        
+        // Przewiń do góry formularza
+        document.querySelector('.bg-white.shadow.rounded-lg').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+}
+
+// Funkcja wyświetlająca komunikat o pomyślnym resecie
+function showResetSuccessMessage() {
+    // Sprawdź czy już istnieje komunikat
+    let existingMessage = document.getElementById('reset-success-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Utwórz nowy komunikat
+    const message = document.createElement('div');
+    message.id = 'reset-success-message';
+    message.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50 shadow-lg';
+    message.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>Wszystkie pola zostały zresetowane do wartości domyślnych</span>
+        </div>
+    `;
+    
+    document.body.appendChild(message);
+    
+    // Usuń komunikat po 3 sekundach
+    setTimeout(() => {
+        if (message.parentNode) {
+            message.remove();
+        }
+    }, 3000);
+}
+
+// Polskie nazwy miesięcy
+const polishMonths = [
+    'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+    'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
+];
+
+// Funkcja formatująca datę w języku polskim
+function formatPolishDate(dateString) {
+    if (!dateString) return '';
+    
+    const [year, month] = dateString.split('-');
+    const monthIndex = parseInt(month) - 1;
+    const monthName = polishMonths[monthIndex];
+    
+    return `${monthName} ${year}`;
+}
+
+// Niestandardowy kalendarz polski
+class PolishMonthPicker {
+    constructor(inputId, buttonId, displayId) {
+        this.input = document.getElementById(inputId);
+        this.button = document.getElementById(buttonId);
+        this.display = document.getElementById(displayId);
+        this.picker = null;
+        this.currentYear = new Date().getFullYear();
+        this.selectedYear = this.currentYear;
+        this.selectedMonth = new Date().getMonth();
+        
+        this.init();
+    }
+    
+    init() {
+        // Ustaw początkową wartość
+        if (this.input.value) {
+            const [year, month] = this.input.value.split('-');
+            this.selectedYear = parseInt(year);
+            this.selectedMonth = parseInt(month) - 1;
+            this.updateDisplay();
+        }
+        
+        // Event listeners
+        this.button.addEventListener('click', () => this.togglePicker());
+        document.addEventListener('click', (e) => this.handleOutsideClick(e));
+        
+        // Obsługa klawiatury
+        this.button.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.togglePicker();
+            }
+        });
+    }
+    
+    togglePicker() {
+        if (this.picker && this.picker.style.display !== 'none') {
+            this.hidePicker();
+        } else {
+            this.showPicker();
+        }
+    }
+    
+    showPicker() {
+        this.hidePicker(); // Ukryj istniejący picker
+        
+        this.picker = this.createPicker();
+        this.button.parentNode.appendChild(this.picker);
+        
+        // Animacja
+        setTimeout(() => {
+            this.picker.classList.add('show');
+        }, 10);
+        
+        // Focus na pierwszy przycisk nawigacji
+        const firstNavButton = this.picker.querySelector('.custom-month-picker-nav button');
+        if (firstNavButton) {
+            firstNavButton.focus();
+        }
+    }
+    
+    hidePicker() {
+        if (this.picker) {
+            this.picker.remove();
+            this.picker = null;
+        }
+    }
+    
+    handleOutsideClick(e) {
+        if (this.picker && !this.picker.contains(e.target) && !this.button.contains(e.target)) {
+            this.hidePicker();
+        }
+    }
+    
+    createPicker() {
+        const picker = document.createElement('div');
+        picker.className = 'custom-month-picker';
+        picker.innerHTML = `
+            <div class="custom-month-picker-header">
+                <span class="custom-month-picker-year">${this.selectedYear}</span>
+                <div class="custom-month-picker-nav">
+                    <button type="button" onclick="monthPicker.previousYear()" ${this.selectedYear <= 2020 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button type="button" onclick="monthPicker.nextYear()" ${this.selectedYear >= 2030 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="custom-month-picker-months">
+                ${this.createMonthButtons()}
+            </div>
+        `;
+        
+        return picker;
+    }
+    
+    createMonthButtons() {
+        return polishMonths.map((month, index) => {
+            const isSelected = index === this.selectedMonth && this.selectedYear === this.getInputYear();
+            const isCurrent = index === new Date().getMonth() && this.selectedYear === new Date().getFullYear();
+            
+            let className = 'custom-month-picker-month';
+            if (isSelected) className += ' selected';
+            if (isCurrent) className += ' current';
+            
+            return `<div class="${className}" onclick="monthPicker.selectMonth(${index})">${month}</div>`;
+        }).join('');
+    }
+    
+    selectMonth(monthIndex) {
+        this.selectedMonth = monthIndex;
+        
+        // Zaktualizuj input
+        const monthStr = String(monthIndex + 1).padStart(2, '0');
+        this.input.value = `${this.selectedYear}-${monthStr}`;
+        
+        // Zaktualizuj wyświetlanie
+        this.updateDisplay();
+        
+        // Ukryj picker
+        this.hidePicker();
+        
+        // Pokaż powiadomienie
+        showPeriodNotification(formatPolishDate(this.input.value));
+        
+        // Trigger change event
+        this.input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    previousYear() {
+        if (this.selectedYear > 2020) {
+            this.selectedYear--;
+            this.updatePicker();
+        }
+    }
+    
+    nextYear() {
+        if (this.selectedYear < 2030) {
+            this.selectedYear++;
+            this.updatePicker();
+        }
+    }
+    
+    updatePicker() {
+        if (this.picker) {
+            const yearSpan = this.picker.querySelector('.custom-month-picker-year');
+            const monthsDiv = this.picker.querySelector('.custom-month-picker-months');
+            
+            yearSpan.textContent = this.selectedYear;
+            monthsDiv.innerHTML = this.createMonthButtons();
+            
+            // Zaktualizuj przyciski nawigacji
+            const prevButton = this.picker.querySelector('.custom-month-picker-nav button:first-child');
+            const nextButton = this.picker.querySelector('.custom-month-picker-nav button:last-child');
+            
+            prevButton.disabled = this.selectedYear <= 2020;
+            nextButton.disabled = this.selectedYear >= 2030;
+        }
+    }
+    
+    updateDisplay() {
+        const polishDate = formatPolishDate(this.input.value);
+        this.display.textContent = polishDate || 'Wybierz miesiąc';
+    }
+    
+    getInputYear() {
+        if (this.input.value) {
+            return parseInt(this.input.value.split('-')[0]);
+        }
+        return new Date().getFullYear();
+    }
+}
+
+// Funkcja inicjalizująca polski kalendarz
+function initializePolishCalendar() {
+    // Utwórz instancję niestandardowego kalendarza
+    window.monthPicker = new PolishMonthPicker('period', 'custom-month-picker', 'selected-period-display');
+}
+
+// Funkcja wyświetlająca powiadomienie o wybranym okresie
+function showPeriodNotification(periodText) {
+    // Sprawdź czy już istnieje powiadomienie
+    let existingNotification = document.getElementById('period-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Utwórz nowe powiadomienie
+    const notification = document.createElement('div');
+    notification.id = 'period-notification';
+    notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded z-50 shadow-lg';
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-calendar-alt mr-2"></i>
+            <span>Wybrano okres: ${periodText}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Usuń powiadomienie po 2 sekundach
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 2000);
+}
+
+// Obsługa skrótów klawiszowych
+document.addEventListener('keydown', function(event) {
+    // Ctrl+R lub Cmd+R - reset formularza
+    if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+        event.preventDefault();
+        resetForm();
+    }
+});
+
+// Oblicz koszty przy ładowaniu strony i przy każdej zmianie
+document.addEventListener('DOMContentLoaded', function() {
+    setupAutoSave();
+    calculateCosts();
+    initializePolishCalendar();
+    
+    // Dodaj informację o skrócie klawiszowym
+    const resetButton = document.querySelector('button[onclick="resetForm()"]');
+    if (resetButton) {
+        resetButton.title = 'Skrót klawiszowy: Ctrl+R (Windows) / Cmd+R (Mac)';
+    }
+});
+</script>
+{% endblock %}

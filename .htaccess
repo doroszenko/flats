@@ -1,0 +1,63 @@
+# Apache configuration for Flats Utility Bills Manager
+
+# Redirect all requests to public directory
+RewriteEngine On
+RewriteRule ^$ public/ [L]
+RewriteRule (.*) public/$1 [L]
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Hide sensitive files
+<Files ~ "^\.">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ~ "\.env$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ~ "composer\.(json|lock)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ~ "install\.php$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect storage directory
+<Directory "storage">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Protect config directory
+<Directory "config">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Protect src directory
+<Directory "src">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Protect templates directory
+<Directory "templates">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Protect vendor directory
+<Directory "vendor">
+    Order allow,deny
+    Deny from all
+</Directory>

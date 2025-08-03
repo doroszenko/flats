@@ -1,0 +1,298 @@
+{% extends "layout/app.twig" %}
+
+{% block title %}Rozliczenie {{ bill.period }} - {{ flat.name }} - {{ parent() }}{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <!-- Page header -->
+        <div class="mb-8">
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-4">
+                    <li>
+                        <a href="/flats" class="text-gray-400 hover:text-gray-500">
+                            <i class="fas fa-building mr-1"></i>
+                            Mieszkania
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <a href="/flats/{{ flat.id }}" class="text-gray-400 hover:text-gray-500">{{ flat.name }}</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <a href="/flats/{{ flat.id }}/bills" class="text-gray-400 hover:text-gray-500">Rozliczenia</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">{{ bill.period }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                            <i class="fas fa-file-invoice mr-2 text-primary-600"></i>
+                            Rozliczenie {{ bill.period }}
+                        </h2>
+                        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium {% if bill.status == 'confirmed' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {% if bill.status == 'confirmed' %}
+                                <i class="fas fa-check mr-1"></i>
+                                Zatwierdzone
+                            {% else %}
+                                <i class="fas fa-clock mr-1"></i>
+                                Oczekuje
+                            {% endif %}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Mieszkanie: {{ flat.name }}
+                    </p>
+                </div>
+                <div class="mt-4 flex space-x-3 md:mt-0 md:ml-4">
+                    {% if bill.status != 'confirmed' %}
+                        <a href="/flats/{{ flat.id }}/bills/{{ bill.id }}/edit" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edytuj
+                        </a>
+                        <form method="POST" action="/flats/{{ flat.id }}/bills/{{ bill.id }}/confirm" class="inline">
+                            <button type="submit" onclick="return confirm('Czy na pewno chcesz zatwierdzić to rozliczenie? Po zatwierdzeniu nie będzie można go edytować.')" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                <i class="fas fa-check mr-2"></i>
+                                Zatwierdź
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill details -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg fade-in">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Szczegóły rozliczenia
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    Informacje o rozliczeniu mediów za {{ bill.period }}
+                </p>
+            </div>
+            <div class="border-t border-gray-200">
+                <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Okres rozliczeniowy
+                        </dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            {{ bill.period }}
+                        </dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Status
+                        </dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if bill.status == 'confirmed' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {% if bill.status == 'confirmed' %}
+                                    <i class="fas fa-check mr-1"></i>
+                                    Zatwierdzone
+                                {% else %}
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Oczekuje na zatwierdzenie
+                                {% endif %}
+                            </span>
+                        </dd>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Data utworzenia
+                        </dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                            {{ bill.created_at|date('d.m.Y H:i') }}
+                        </dd>
+                    </div>
+                    {% if bill.status == 'confirmed' and bill.confirmed_at %}
+                        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">
+                                Data zatwierdzenia
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                {{ bill.confirmed_at|date('d.m.Y H:i') }}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">
+                            Łączny koszt
+                        </dt>
+                        <dd class="mt-1 text-lg font-semibold text-gray-900 sm:mt-0 sm:col-span-2">
+                            {{ bill.total_cost|number_format(2, ',', ' ') }} zł
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Utilities breakdown -->
+        {% if bill.costs is not empty %}
+            <div class="mt-8 bg-white shadow overflow-hidden sm:rounded-lg fade-in">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                        <i class="fas fa-cogs mr-2 text-primary-600"></i>
+                        Rozliczenie mediów
+                    </h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                        Szczegółowy podział kosztów według mediów
+                    </p>
+                </div>
+                <div class="border-t border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Medium
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Odczyt
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Zużycie
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Koszt
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Udział
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for utilityId, cost in bill.costs %}
+                                    {% set utility = flat.utilities[utilityId] %}
+                                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                {% if utility.type == 'gas' %}
+                                                    <i class="fas fa-fire text-orange-500 text-lg mr-3"></i>
+                                                    <span class="text-sm font-medium text-gray-900">Gaz</span>
+                                                {% elseif utility.type == 'electricity' %}
+                                                    <i class="fas fa-bolt text-yellow-500 text-lg mr-3"></i>
+                                                    <span class="text-sm font-medium text-gray-900">Prąd</span>
+                                                {% elseif utility.type == 'cold_water' %}
+                                                    <i class="fas fa-tint text-blue-500 text-lg mr-3"></i>
+                                                    <span class="text-sm font-medium text-gray-900">Woda zimna</span>
+                                                {% elseif utility.type == 'hot_water' %}
+                                                    <i class="fas fa-tint text-red-500 text-lg mr-3"></i>
+                                                    <span class="text-sm font-medium text-gray-900">Woda ciepła</span>
+
+                                                {% else %}
+                                                    <i class="fas fa-cog text-gray-500 text-lg mr-3"></i>
+                                                    <span class="text-sm font-medium text-gray-900">{{ utility.type|title }}</span>
+                                                {% endif %}
+                                                {% if utility.name %}
+                                                    <span class="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ utility.name }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {% if bill.readings[utilityId] is defined %}
+                                                {{ bill.readings[utilityId]|number_format(2, ',', ' ') }}
+                                                {% if utility.type in ['cold_water', 'hot_water', 'gas'] %}m³
+                                                {% elseif utility.type == 'electricity' %}kWh
+
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-gray-400">Brak odczytu</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {% if bill.consumption[utilityId] is defined %}
+                                                {{ bill.consumption[utilityId]|number_format(2, ',', ' ') }}
+                                                {% if utility.type in ['cold_water', 'hot_water', 'gas'] %}m³
+                                                {% elseif utility.type == 'electricity' %}kWh
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-gray-400">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm">
+                                                <div class="font-semibold text-gray-900">
+                                                    {{ cost|number_format(2, ',', ' ') }} zł
+                                                </div>
+                                                {% if bill.fixed_costs[utilityId] is defined and bill.fixed_costs[utilityId] > 0 %}
+                                                    <div class="text-xs text-gray-500">
+                                                        + {{ bill.fixed_costs[utilityId]|number_format(2, ',', ' ') }} zł (stała)
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {% set totalUtilityCost = cost + (bill.fixed_costs[utilityId] ?? 0) %}
+                                            {% set percentage = (totalUtilityCost / bill.total_cost * 100)|round(1) %}
+                                            <div class="flex items-center">
+                                                <div class="flex-1">
+                                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                                        <div class="h-2 rounded-full bg-primary-600" style="width: {{ percentage }}%"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="ml-2 text-sm text-gray-500">{{ percentage }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="mt-8 bg-white shadow sm:rounded-lg fade-in">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    <i class="fas fa-cogs mr-2 text-primary-600"></i>
+                    Akcje
+                </h3>
+                <div class="mt-2 max-w-xl text-sm text-gray-500">
+                    {% if bill.status != 'confirmed' %}
+                        <p>To rozliczenie oczekuje na zatwierdzenie. Po zatwierdzeniu zostanie dodane do historii i nie będzie można go edytować.</p>
+                    {% else %}
+                        <p>To rozliczenie zostało zatwierdzone i znajduje się w historii. Możesz je usunąć, ale zostanie również usunięte z historii.</p>
+                    {% endif %}
+                </div>
+                <div class="mt-5 flex space-x-3">
+                    {% if bill.status != 'confirmed' %}
+                        <form method="POST" action="/flats/{{ flat.id }}/bills/{{ bill.id }}/confirm" class="inline">
+                            <button type="submit" onclick="return confirm('Czy na pewno chcesz zatwierdzić to rozliczenie? Po zatwierdzeniu nie będzie można go edytować.')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                <i class="fas fa-check mr-2"></i>
+                                Zatwierdź rozliczenie
+                            </button>
+                        </form>
+                        <a href="/flats/{{ flat.id }}/bills/{{ bill.id }}/edit" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edytuj rozliczenie
+                        </a>
+                    {% endif %}
+                    <form method="POST" action="/flats/{{ flat.id }}/bills/{{ bill.id }}/delete" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" onclick="return confirmDelete('Czy na pewno chcesz usunąć to rozliczenie?{% if bill.status == 'confirmed' %} Zostanie również usunięte z historii.{% endif %}')" class="inline-flex items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                            <i class="fas fa-trash mr-2"></i>
+                            Usuń rozliczenie
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
