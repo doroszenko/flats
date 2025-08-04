@@ -24,7 +24,7 @@ return [
         'path' => $_ENV['LOG_PATH'] ?? 'storage/logs',
     ],
     'twig' => [
-        'cache' => $_ENV['APP_ENV'] === 'production' ? 'storage/cache/twig' : false,
+        'cache' => ($_ENV['APP_ENV'] ?? 'development') === 'production' ? 'storage/cache/twig' : false,
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
     'utility_rates' => [

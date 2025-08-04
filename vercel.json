@@ -1,6 +1,6 @@
 {
   "functions": {
-    "public/*.php": {
+    "api/*.php": {
       "runtime": "vercel-php@0.8.3"
     }
   }
