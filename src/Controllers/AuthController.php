@@ -22,7 +22,6 @@ class AuthController
 
     public function loginForm(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // Jeśli użytkownik jest już zalogowany, przekieruj do mieszkań
         if ($this->authService->isAuthenticated()) {
             return $response->withHeader('Location', '/flats')->withStatus(302);
         }
@@ -31,7 +30,6 @@ class AuthController
             'error' => $_SESSION['error'] ?? null,
         ];
 
-        // Wyczyść komunikat błędu z sesji
         unset($_SESSION['error']);
 
         return $this->twig->render($response, 'auth/login.twig', $data);
