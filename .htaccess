@@ -1,9 +1,9 @@
 # Apache configuration for Flats Utility Bills Manager
 
-# Redirect all requests to public directory
+# Redirect all requests to api directory
 RewriteEngine On
-RewriteRule ^$ public/ [L]
-RewriteRule (.*) public/$1 [L]
+RewriteRule ^$ api/ [L]
+RewriteRule (.*) api/$1 [L]
 
 # Security headers
 Header always set X-Content-Type-Options nosniff
