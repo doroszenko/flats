@@ -5,7 +5,6 @@
 .env.staging
 
 # Composer
-/vendor/
 composer.phar
 
 # IDE and editor files
