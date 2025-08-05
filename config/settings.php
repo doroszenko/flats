@@ -21,7 +21,7 @@ return [
     ],
     'logger' => [
         'level' => $_ENV['LOG_LEVEL'] ?? 'debug',
-        'path' => $_ENV['LOG_PATH'] ?? '/tmp/logs',
+        'path' => $_ENV['LOG_PATH'] ?? '/../logs',
     ],
     'twig' => [
         'cache' => false, // Disable cache for serverless compatibility
