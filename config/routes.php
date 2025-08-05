@@ -10,6 +10,43 @@ use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
 return function (App $app) {
+    // Routing dla plików statycznych (favicon)
+    $app->get('/favicon.svg', function ($request, $response) {
+        $filePath = __DIR__ . '/../public/favicon.svg';
+        if (file_exists($filePath)) {
+            $content = file_get_contents($filePath);
+            $response->getBody()->write($content);
+            return $response->withHeader('Content-Type', 'image/svg+xml');
+        }
+        return $response->withStatus(404);
+    });
+    
+    // Test route
+    $app->get('/test', function ($request, $response) {
+        $response->getBody()->write('Test route works!');
+        return $response;
+    });
+    
+    $app->get('/favicon.png', function ($request, $response) {
+        $filePath = __DIR__ . '/../public/favicon.png';
+        if (file_exists($filePath)) {
+            $content = file_get_contents($filePath);
+            $response->getBody()->write($content);
+            return $response->withHeader('Content-Type', 'image/png');
+        }
+        return $response->withStatus(404);
+    });
+    
+    $app->get('/favicon.ico', function ($request, $response) {
+        $filePath = __DIR__ . '/../public/favicon.ico';
+        if (file_exists($filePath)) {
+            $content = file_get_contents($filePath);
+            $response->getBody()->write($content);
+            return $response->withHeader('Content-Type', 'image/x-icon');
+        }
+        return $response->withStatus(404);
+    });
+
     // Strona główna - przekierowanie do logowania lub mieszkań
     $app->get('/', function ($request, $response) {
         if (isset($_SESSION['user_id'])) {

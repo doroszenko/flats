@@ -22,4 +22,6 @@ return function (App $app) {
     
     // Middleware dla Twig
     $app->add(TwigMiddleware::createFromContainer($app));
+    
+
 };
