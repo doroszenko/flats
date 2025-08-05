@@ -18,11 +18,22 @@ class GladiusService
 
     private function getWritablePath(string $originalPath): string
     {
-        // In serverless environments, use /tmp if the original path is not writable
-        if (!is_writable(dirname($originalPath)) && is_dir('/tmp')) {
-            $tmpPath = '/tmp/gladius';
-            error_log("Using temporary directory for storage: $tmpPath");
-            return $tmpPath;
+        // Wymuszamy używanie tylko katalogu db
+        // Sprawdź czy katalog jest zapisywalny, jeśli nie - spróbuj naprawić uprawnienia
+        if (!is_writable(dirname($originalPath))) {
+            $dbDir = dirname($originalPath);
+            if (is_dir($dbDir)) {
+                // Spróbuj naprawić uprawnienia
+                chmod($dbDir, 0755);
+                if (!is_writable($dbDir)) {
+                    throw new Exception("Katalog {$dbDir} nie jest zapisywalny i nie można naprawić uprawnień");
+                }
+            } else {
+                // Spróbuj utworzyć katalog
+                if (!mkdir($dbDir, 0755, true)) {
+                    throw new Exception("Nie można utworzyć katalogu {$dbDir}");
+                }
+            }
         }
         
         return $originalPath;
