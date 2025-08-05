@@ -12,14 +12,32 @@ class GladiusService
 
     public function __construct(string $dbPath)
     {
-        $this->dbPath = $dbPath;
+        $this->dbPath = $this->getWritablePath($dbPath);
         $this->ensureDirectoryExists();
+    }
+
+    private function getWritablePath(string $originalPath): string
+    {
+        // In serverless environments, use /tmp if the original path is not writable
+        if (!is_writable(dirname($originalPath)) && is_dir('/tmp')) {
+            $tmpPath = '/tmp/gladius';
+            error_log("Using temporary directory for storage: $tmpPath");
+            return $tmpPath;
+        }
+        
+        return $originalPath;
     }
 
     private function ensureDirectoryExists(): void
     {
         if (!is_dir($this->dbPath)) {
-            mkdir($this->dbPath, 0755, true);
+            try {
+                mkdir($this->dbPath, 0755, true);
+            } catch (Exception $e) {
+                error_log("Failed to create directory {$this->dbPath}: " . $e->getMessage());
+                // In serverless environments, we might not be able to create directories
+                // The service will still work for reading if directories exist
+            }
         }
     }
 
@@ -27,8 +45,21 @@ class GladiusService
     {
         try {
             $collectionPath = $this->dbPath . '/' . $collection;
-            if (!is_dir($collectionPath)) {
-                mkdir($collectionPath, 0755, true);
+            
+            // Only try to create directory if we can write to the parent directory
+            if (!is_dir($collectionPath) && is_writable($this->dbPath)) {
+                try {
+                    mkdir($collectionPath, 0755, true);
+                } catch (Exception $e) {
+                    error_log("Failed to create collection directory {$collectionPath}: " . $e->getMessage());
+                    return false;
+                }
+            }
+
+            // Check if we can write to the collection directory
+            if (!is_dir($collectionPath) || !is_writable($collectionPath)) {
+                error_log("Cannot write to collection directory: {$collectionPath}");
+                return false;
             }
 
             $filePath = $collectionPath . '/' . $id . '.json';

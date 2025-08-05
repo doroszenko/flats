@@ -9,7 +9,7 @@ return [
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
     'gladius' => [
-        'db_path' => $_ENV['GLADIUS_DB_PATH'] ?? 'storage/gladius',
+        'db_path' => $_ENV['GLADIUS_DB_PATH'] ?? '/tmp/gladius',
     ],
     'session' => [
         'name' => $_ENV['SESSION_NAME'] ?? 'flats_session',
@@ -21,10 +21,10 @@ return [
     ],
     'logger' => [
         'level' => $_ENV['LOG_LEVEL'] ?? 'debug',
-        'path' => $_ENV['LOG_PATH'] ?? 'storage/logs',
+        'path' => $_ENV['LOG_PATH'] ?? '/tmp/logs',
     ],
     'twig' => [
-        'cache' => ($_ENV['APP_ENV'] ?? 'development') === 'production' ? 'storage/cache/twig' : false,
+        'cache' => ($_ENV['APP_ENV'] ?? 'development') === 'production' ? '/tmp/cache/twig' : false,
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
     'utility_rates' => [

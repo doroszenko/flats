@@ -112,14 +112,23 @@ class SecurityService
             'context' => $context
         ];
         
-        $logFile = 'storage/logs/security.log';
+        // Use /tmp for serverless environments
+        $logFile = '/tmp/security.log';
         $logDir = dirname($logFile);
         
         if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
+            try {
+                mkdir($logDir, 0755, true);
+            } catch (Exception $e) {
+                error_log("Failed to create security log directory {$logDir}: " . $e->getMessage());
+                return; // Skip logging if we can't create the directory
+            }
         }
         
-        file_put_contents($logFile, json_encode($logEntry) . "\n", FILE_APPEND | LOCK_EX);
+        // Only write if the directory is writable
+        if (is_writable($logDir)) {
+            file_put_contents($logFile, json_encode($logEntry) . "\n", FILE_APPEND | LOCK_EX);
+        }
     }
 
     public function detectSuspiciousActivity(array $data): bool

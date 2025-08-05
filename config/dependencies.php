@@ -19,12 +19,28 @@ return function (Container $container) {
         $settings = $c->get('settings')['logger'];
         $logger = new Logger('flats-app');
         
-        if (!is_dir($settings['path'])) {
-            mkdir($settings['path'], 0755, true);
+        // Ensure the log directory exists and is writable
+        $logPath = $settings['path'];
+        if (!is_dir($logPath)) {
+            try {
+                mkdir($logPath, 0755, true);
+            } catch (Exception $e) {
+                error_log("Failed to create log directory {$logPath}: " . $e->getMessage());
+                // In serverless environments, fall back to /tmp if available
+                if (is_dir('/tmp')) {
+                    $logPath = '/tmp';
+                    error_log("Using /tmp for logging");
+                }
+            }
         }
         
-        $handler = new StreamHandler($settings['path'] . '/app.log', $settings['level']);
-        $logger->pushHandler($handler);
+        // Only add file handler if the directory is writable
+        if (is_writable($logPath)) {
+            $handler = new StreamHandler($logPath . '/app.log', $settings['level']);
+            $logger->pushHandler($handler);
+        } else {
+            error_log("Log directory is not writable: {$logPath}");
+        }
         
         return $logger;
     });
