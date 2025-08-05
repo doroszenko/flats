@@ -32,6 +32,9 @@ storage/logs/*.log
 storage/cache/
 *.cache
 
+# Storage data (cleared on Vercel builds)
+api/storage/gladius/
+
 # Temporary files
 *.tmp
 *.temp
