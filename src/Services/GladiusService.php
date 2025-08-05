@@ -9,17 +9,37 @@ use Exception;
 class GladiusService
 {
     private string $dbPath;
+    private bool $isServerless;
 
     public function __construct(string $dbPath)
     {
+        $this->isServerless = $this->isServerlessEnvironment();
         $this->dbPath = $this->getWritablePath($dbPath);
         $this->ensureDirectoryExists();
     }
 
+    private function isServerlessEnvironment(): bool
+    {
+        // Sprawdź czy jesteśmy w środowisku serverless (Vercel, AWS Lambda, etc.)
+        return getenv('VERCEL') !== false || 
+               getenv('AWS_LAMBDA_FUNCTION_NAME') !== false ||
+               getenv('FUNCTION_TARGET') !== false ||
+               getenv('K_SERVICE') !== false;
+    }
+
     private function getWritablePath(string $originalPath): string
     {
-        // Wymuszamy używanie tylko katalogu db
-        // Sprawdź czy katalog jest zapisywalny, jeśli nie - spróbuj naprawić uprawnienia
+        // W środowisku serverless, używamy /tmp jeśli jest dostępny
+        if ($this->isServerless) {
+            if (is_dir('/tmp') && is_writable('/tmp')) {
+                return '/tmp/flats_db';
+            }
+            // Jeśli /tmp nie jest dostępny, zwróć oryginalną ścieżkę
+            // ale nie próbuj tworzyć katalogów
+            return $originalPath;
+        }
+
+        // W środowisku lokalnym - oryginalna logika
         if (!is_writable(dirname($originalPath))) {
             $dbDir = dirname($originalPath);
             if (is_dir($dbDir)) {
@@ -41,13 +61,16 @@ class GladiusService
 
     private function ensureDirectoryExists(): void
     {
+        // W środowisku serverless, nie próbuj tworzyć katalogów
+        if ($this->isServerless) {
+            return;
+        }
+
         if (!is_dir($this->dbPath)) {
             try {
                 mkdir($this->dbPath, 0755, true);
             } catch (Exception $e) {
                 error_log("Failed to create directory {$this->dbPath}: " . $e->getMessage());
-                // In serverless environments, we might not be able to create directories
-                // The service will still work for reading if directories exist
             }
         }
     }
@@ -57,13 +80,30 @@ class GladiusService
         try {
             $collectionPath = $this->dbPath . '/' . $collection;
             
-            // Only try to create directory if we can write to the parent directory
-            if (!is_dir($collectionPath) && is_writable($this->dbPath)) {
-                try {
-                    mkdir($collectionPath, 0755, true);
-                } catch (Exception $e) {
-                    error_log("Failed to create collection directory {$collectionPath}: " . $e->getMessage());
+            // W środowisku serverless, sprawdź czy możemy pisać i utwórz katalog jeśli potrzeba
+            if ($this->isServerless) {
+                if (!is_writable($this->dbPath)) {
+                    error_log("Cannot write to database directory in serverless environment: {$this->dbPath}");
                     return false;
+                }
+                // W serverless, spróbuj utworzyć katalog kolekcji jeśli nie istnieje
+                if (!is_dir($collectionPath)) {
+                    try {
+                        mkdir($collectionPath, 0755, true);
+                    } catch (Exception $e) {
+                        error_log("Failed to create collection directory in serverless: {$collectionPath}: " . $e->getMessage());
+                        return false;
+                    }
+                }
+            } else {
+                // Only try to create directory if we can write to the parent directory
+                if (!is_dir($collectionPath) && is_writable($this->dbPath)) {
+                    try {
+                        mkdir($collectionPath, 0755, true);
+                    } catch (Exception $e) {
+                        error_log("Failed to create collection directory {$collectionPath}: " . $e->getMessage());
+                        return false;
+                    }
                 }
             }
 

@@ -2,6 +2,19 @@
 
 declare(strict_types=1);
 
+// Sprawdź czy jesteśmy w środowisku serverless
+$isServerless = getenv('VERCEL') !== false || 
+                getenv('AWS_LAMBDA_FUNCTION_NAME') !== false ||
+                getenv('FUNCTION_TARGET') !== false ||
+                getenv('K_SERVICE') !== false;
+
+// Wybierz odpowiednią ścieżkę bazy danych
+if ($isServerless && is_dir('/tmp') && is_writable('/tmp')) {
+    $dbPath = '/tmp/flats_db';
+} else {
+    $dbPath = $_ENV['GLADIUS_DB_PATH'] ?? __DIR__ . '/../api/db';
+}
+
 return [
     'app' => [
         'name' => $_ENV['APP_NAME'] ?? 'Flats Utility Bills Manager',
@@ -9,7 +22,7 @@ return [
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
     'gladius' => [
-        'db_path' => $_ENV['GLADIUS_DB_PATH'] ?? __DIR__ . '/../db',
+        'db_path' => $dbPath,
     ],
     'session' => [
         'name' => $_ENV['SESSION_NAME'] ?? 'flats_session',

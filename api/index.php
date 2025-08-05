@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Application;
 use DI\Container;
 use Slim\Factory\AppFactory;
 

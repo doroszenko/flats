@@ -1,2 +1,4 @@
 /vendor
 .vercel
+/db
+/api/db
