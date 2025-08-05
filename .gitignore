@@ -48,6 +48,9 @@ api/storage/
 *.sqlite
 *.sqlite3
 
+# JSON database files
+db/
+
 # Uploaded files (if any)
 uploads/
 public/uploads/

@@ -9,7 +9,7 @@ return [
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     ],
     'gladius' => [
-        'db_path' => $_ENV['GLADIUS_DB_PATH'] ?? '/tmp/gladius',
+        'db_path' => $_ENV['GLADIUS_DB_PATH'] ?? __DIR__ . '/../db',
     ],
     'session' => [
         'name' => $_ENV['SESSION_NAME'] ?? 'flats_session',
