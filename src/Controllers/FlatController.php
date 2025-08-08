@@ -113,6 +113,8 @@ class FlatController
                             'initial_reading' => isset($utility['initial_reading']) ? (float)$utility['initial_reading'] : 0.0,
                             'fixed_cost' => isset($utility['fixed_cost']) ? (float)$utility['fixed_cost'] : 0.0,
                             'rate' => isset($utility['rate']) ? (float)$utility['rate'] : null,
+                            'fixed_amount_enabled' => isset($utility['fixed_amount_enabled']) ? (bool)$utility['fixed_amount_enabled'] : false,
+                            'fixed_amount' => isset($utility['fixed_amount']) ? (float)$utility['fixed_amount'] : 0.0,
                             'id' => $utilityId
                         ];
                     }
@@ -182,6 +184,8 @@ class FlatController
                             'initial_reading' => isset($utility['initial_reading']) ? (float)$utility['initial_reading'] : 0.0,
                             'fixed_cost' => isset($utility['fixed_cost']) ? (float)$utility['fixed_cost'] : 0.0,
                             'rate' => isset($utility['rate']) ? (float)$utility['rate'] : null,
+                            'fixed_amount_enabled' => isset($utility['fixed_amount_enabled']) ? (bool)$utility['fixed_amount_enabled'] : false,
+                            'fixed_amount' => isset($utility['fixed_amount']) ? (float)$utility['fixed_amount'] : 0.0,
                             'id' => $utilityId
                         ];
                     }

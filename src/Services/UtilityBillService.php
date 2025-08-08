@@ -279,8 +279,21 @@ class UtilityBillService
             $utilityInfo = $this->getUtilityInfo($utilityId, $flat);
             $utilityType = $utilityInfo['type'];
             
+            // Sprawdź czy to licznik z wartością stałą
+            $isFixedAmount = false;
+            if ($flat && isset($flat['utilities'][$utilityId])) {
+                $utility = $flat['utilities'][$utilityId];
+                $isFixedAmount = $utility['fixed_amount_enabled'] ?? false;
+            }
+            
+            // Dodaj oznaczenie dla liczników z wartością stałą
+            $label = $utilityInfo['label'];
+            if ($isFixedAmount) {
+                $label .= ' (wartość stała)';
+            }
+            
             $chartData['datasets'][] = [
-                'label' => $utilityInfo['label'],
+                'label' => $label,
                 'data' => array_reverse($data), // Odwróć aby najstarsze były pierwsze
                 'borderColor' => $colors[$utilityType] ?? 'rgb(75, 192, 192)',
                 'backgroundColor' => ($colors[$utilityType] ?? 'rgb(75, 192, 192)') . '20',
@@ -303,6 +316,9 @@ class UtilityBillService
             $label = $typeName;
             if (!empty($utility['name'])) {
                 $label .= " ({$utility['name']})";
+            } else {
+                // Jeśli nie ma nazwy, użyj ID ale w bardziej czytelny sposób
+                $label .= " (Licznik #" . substr($utilityId, 0, 8) . ")";
             }
             
             return [
@@ -312,9 +328,10 @@ class UtilityBillService
         }
         
         // Fallback jeśli nie można znaleźć informacji o liczniku
+        // Może to być stary licznik, który został usunięty
         return [
             'type' => 'unknown',
-            'label' => $utilityId
+            'label' => 'Usunięty licznik (' . substr($utilityId, 0, 8) . ')'
         ];
     }
 
@@ -376,8 +393,18 @@ class UtilityBillService
             $utility = $flat['utilities'][$utilityId];
             $type = $utility['type'];
             
-            // Użyj poprzedniego odczytu jeśli istnieje, w przeciwnym razie stan początkowy
+            // Sprawdź czy licznik ma włączoną wartość stałą
+            if (isset($utility['fixed_amount_enabled']) && $utility['fixed_amount_enabled'] && isset($utility['fixed_amount'])) {
+                // Użyj wartości stałej zamiast obliczania na podstawie odczytów
+                $costs[$utilityId] = (float)$utility['fixed_amount'];
+                continue;
+            }
+            
+            // Konwertuj odczyty na liczby
+            $currentReading = is_numeric($currentReading) ? (float)$currentReading : 0;
             $previousReading = $previousReadings[$utilityId] ?? ($utility['initial_reading'] ?? 0);
+            $previousReading = is_numeric($previousReading) ? (float)$previousReading : 0;
+            
             $consumption = max(0, $currentReading - $previousReading); // Zużycie od poprzedniego odczytu
             // Użyj opłaty stałej z formularza lub z konfiguracji licznika jako domyślnej
             $fixedCost = $fixedCosts[$utilityId] ?? ($utility['fixed_cost'] ?? 0);

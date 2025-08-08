@@ -381,8 +381,11 @@ class UtilityBillController
             }
             
             $utility = $flat['utilities'][$utilityId];
-            // Użyj poprzedniego odczytu jeśli istnieje, w przeciwnym razie stan początkowy
+            // Konwertuj odczyty na liczby
+            $currentReading = is_numeric($currentReading) ? (float)$currentReading : 0;
             $previousReading = $previousReadings[$utilityId] ?? ($utility['initial_reading'] ?? 0);
+            $previousReading = is_numeric($previousReading) ? (float)$previousReading : 0;
+            
             $consumption[$utilityId] = max(0, $currentReading - $previousReading);
         }
         return $consumption;

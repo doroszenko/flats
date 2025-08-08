@@ -122,24 +122,33 @@
                                                     {% set utility = flat.utilities[utilityId] %}
                                                     {% set fixedCost = bill.fixed_costs[utilityId] ?? 0 %}
                                                     {% set totalUtilityCost = cost + fixedCost %}
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                                        {% if utility.type == 'gas' %}
-                                                            <i class="fas fa-fire mr-1 text-orange-500"></i>Gaz
-                                                        {% elseif utility.type == 'electricity' %}
-                                                            <i class="fas fa-bolt mr-1 text-yellow-500"></i>Prąd
-                                                        {% elseif utility.type == 'cold_water' %}
-                                                            <i class="fas fa-tint mr-1 text-blue-500"></i>Woda zimna
-                                                        {% elseif utility.type == 'hot_water' %}
-                                                            <i class="fas fa-tint mr-1 text-red-500"></i>Woda ciepła
-
+                                                    {% set isFixedAmount = utility.fixed_amount_enabled ?? false %}
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if isFixedAmount %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                        {% if utility %}
+                                                            {% if utility.type == 'gas' %}
+                                                                <i class="fas fa-fire mr-1 text-orange-500"></i>Gaz
+                                                            {% elseif utility.type == 'electricity' %}
+                                                                <i class="fas fa-bolt mr-1 text-yellow-500"></i>Prąd
+                                                            {% elseif utility.type == 'cold_water' %}
+                                                                <i class="fas fa-tint mr-1 text-blue-500"></i>Woda zimna
+                                                            {% elseif utility.type == 'hot_water' %}
+                                                                <i class="fas fa-tint mr-1 text-red-500"></i>Woda ciepła
+                                                            {% else %}
+                                                                {{ utility.type|title }}
+                                                            {% endif %}
+                                                            {% if utility.name %}
+                                                                ({{ utility.name }})
+                                                            {% else %}
+                                                                (Licznik #{{ utilityId|slice(0, 8) }})
+                                                            {% endif %}
                                                         {% else %}
-                                                            {{ utility.type|title }}
-                                                        {% endif %}
-                                                        {% if utility.name %}
-                                                            ({{ utility.name }})
+                                                            <i class="fas fa-exclamation-triangle mr-1 text-red-500"></i>
+                                                            Usunięty licznik ({{ utilityId|slice(0, 8) }})
                                                         {% endif %}
                                                         : {{ totalUtilityCost|number_format(2, ',', ' ') }} zł
-                                                        {% if fixedCost > 0 %}
+                                                        {% if utility and isFixedAmount %}
+                                                            <span class="text-blue-600 font-medium"> (wartość stała)</span>
+                                                        {% elseif fixedCost > 0 %}
                                                             <span class="text-gray-500"> ({{ cost|number_format(2, ',', ' ') }}+{{ fixedCost|number_format(2, ',', ' ') }})</span>
                                                         {% endif %}
                                                     </span>
@@ -244,7 +253,11 @@ function createUtilityComparisonChart(data) {
     
     lastMonthData.forEach(item => {
         // Wyciągnij typ medium z etykiety (np. "Gaz (Licznik 1)" -> "Gaz")
-        const utilityType = item.label.split(' (')[0];
+        // Usuń oznaczenie "(wartość stała)" jeśli istnieje
+        let utilityType = item.label.split(' (')[0];
+        
+        // Sprawdź czy to licznik z wartością stałą
+        const isFixedAmount = item.label.includes('(wartość stała)');
         
         if (!groupedData[utilityType]) {
             groupedData[utilityType] = 0;

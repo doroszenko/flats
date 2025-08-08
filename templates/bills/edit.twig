@@ -248,9 +248,81 @@ input[type="month"][style*="display: none"] {
                                             <span class="ml-2 text-sm text-gray-600 bg-white px-2 py-1 rounded">{{ utility.name }}</span>
                                         {% endif %}
                                     </div>
+                                    
+                                    {% if utility.fixed_amount_enabled ?? false %}
+                                        <!-- Licznik z wartością stałą -->
+                                        <div class="flex flex-col md:flex-row gap-4">
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    Wartość stała
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="text" readonly value="{{ utility.fixed_amount|number_format(2, ',', ' ') }} zł"
+                                                           class="bg-blue-50 block w-full pr-12 sm:text-sm border-blue-200 rounded-md font-medium text-blue-900 cursor-default"
+                                                           disabled>
+                                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <i class="fas fa-info-circle text-blue-500 text-sm"></i>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-gray-500 mt-1">Wartość stała</p>
+                                            </div>
+                                            
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    Koszt zużycia
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="number" readonly value="{{ utility.fixed_amount }}"
+                                                           class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md cursor-not-allowed"
+                                                           placeholder="0.00">
+                                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <span class="text-gray-500 sm:text-sm">zł</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-gray-500 mt-1">Wartość stała</p>
+                                            </div>
+                                            
+                                            <div class="flex-1">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    Opłata stała/przesyłowa
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="number" readonly value="0.00"
+                                                           class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md cursor-not-allowed"
+                                                           placeholder="0.00">
+                                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <span class="text-gray-500 sm:text-sm">zł</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-gray-500 mt-1">Brak dla wartości stałej</p>
+                                            </div>
+                                            
+                                            <div class="flex-1">
+                                                <label class="block text-base font-semibold text-primary-700">
+                                                    Suma licznika
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="text" readonly value="{{ utility.fixed_amount|number_format(2, ',', ' ') }} zł"
+                                                           class="bg-primary-50 border-2 border-primary-200 block w-full pr-12 text-base border-primary-200 rounded-md font-bold text-primary-800 cursor-default"
+                                                           disabled>
+                                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <i class="fas fa-calculator text-primary-500 text-base"></i>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-primary-600 mt-1 font-medium">Wartość stała</p>
+                                            </div>
+                                        </div>
                                         
-                                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                                            <div>
+                                        <!-- Ukryte pola dla backend -->
+                                        <div class="hidden">
+                                            <input type="hidden" name="readings[{{ utilityId }}]" value="0" data-utility-type="{{ utility.type }}">
+                                            <input type="hidden" name="costs[{{ utilityId }}]" value="{{ utility.fixed_amount }}">
+                                            <input type="hidden" name="fixed_costs[{{ utilityId }}]" value="0">
+                                        </div>
+                                    {% else %}
+                                        <!-- Normalny licznik z odczytami -->
+                                        <div class="flex flex-col md:flex-row gap-4">
+                                            <div class="flex-1">
                                                 <label for="reading_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
                                                     Odczyt licznika
                                                 </label>
@@ -258,7 +330,8 @@ input[type="month"][style*="display: none"] {
                                                     <input type="number" name="readings[{{ utilityId }}]" id="reading_{{ utilityId }}" 
                                                            step="0.001" min="0" value="{{ bill.readings[utilityId] ?? '' }}"
                                                            class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
-                                                           placeholder="0.00">
+                                                           placeholder="0.00"
+                                                           onchange="calculateCosts()">
                                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                                         <span class="text-gray-500 sm:text-sm">
                                                             {% if utility.type in ['cold_water', 'hot_water'] %}m³
@@ -284,7 +357,7 @@ input[type="month"][style*="display: none"] {
                                                 </p>
                                             </div>
                                             
-                                            <div>
+                                            <div class="flex-1">
                                                 <label for="cost_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
                                                     Koszt zużycia *
                                                 </label>
@@ -300,39 +373,57 @@ input[type="month"][style*="display: none"] {
                                                 </div>
                                             </div>
                                             
-                                            <div>
+                                            {% if utility.type != 'cold_water' %}
+                                            <div class="flex-1">
                                                 <label for="fixed_cost_{{ utilityId }}" class="block text-sm font-medium text-gray-700">
                                                     Opłata stała/przesyłowa
                                                 </label>
                                                 <div class="mt-1 relative rounded-md shadow-sm">
                                                     <input type="number" name="fixed_costs[{{ utilityId }}]" id="fixed_cost_{{ utilityId }}" 
-                                                           step="0.001" min="0" value="{{ bill.fixed_costs[utilityId] ?? '0' }}"
+                                                           step="0.001" min="0" value="{{ bill.fixed_costs[utilityId] ?? flat.utilities[utilityId].fixed_cost ?? '0' }}"
                                                            class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
                                                            placeholder="0.00"
-                                                           onchange="calculateTotal()">
+                                                           onchange="calculateCosts()">
                                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                                         <span class="text-gray-500 sm:text-sm">zł</span>
                                                     </div>
                                                 </div>
                                                 <p class="text-xs text-gray-500 mt-1">Abonament, opłata przesyłowa itp.</p>
                                             </div>
-                                            
-                                            <div>
+                                            {% else %}
+                                            <div class="flex-1">
                                                 <label class="block text-sm font-medium text-gray-700">
+                                                    Opłata stała/przesyłowa
+                                                </label>
+                                                <div class="mt-1 relative rounded-md shadow-sm">
+                                                    <input type="number" readonly value="0.00"
+                                                           class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md cursor-not-allowed"
+                                                           placeholder="0.00">
+                                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <span class="text-gray-500 sm:text-sm">zł</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-xs text-gray-500 mt-1">Brak dla wody zimnej</p>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <div class="flex-1">
+                                                <label class="block text-base font-semibold text-primary-700">
                                                     Suma licznika
                                                 </label>
                                                 <div class="mt-1 relative rounded-md shadow-sm">
                                                     <input type="text" id="utility_total_{{ utilityId }}" readonly tabindex="-1"
-                                                           class="bg-gray-100 block w-full pr-12 sm:text-sm border-gray-300 rounded-md font-medium text-gray-900 cursor-default"
+                                                           class="bg-primary-50 border-2 border-primary-200 block w-full pr-12 text-base border-primary-200 rounded-md font-bold text-primary-800 cursor-default"
                                                            value="0 zł" disabled>
                                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                        <i class="fas fa-calculator text-gray-400 text-sm"></i>
+                                                        <i class="fas fa-calculator text-primary-500 text-base"></i>
                                                     </div>
                                                 </div>
-                                                <p class="text-xs text-gray-500 mt-1">Zużycie + opłata stała</p>
+                                                <p class="text-xs text-primary-600 mt-1 font-medium">Zużycie + opłata stała</p>
                                             </div>
                                         </div>
                                     </div>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                             
@@ -377,6 +468,119 @@ input[type="month"][style*="display: none"] {
 // Dane z serwera
 const utilities = {{ flat.utilities|json_encode|raw }};
 const previousReadings = {{ previous_readings|json_encode|raw }};
+const utilityRates = {{ utility_rates|json_encode|raw }};
+
+function calculateCosts() {
+    let total = 0;
+    let groupedTotals = {};
+    let utilityTypeNames = {
+        'gas': '🔥 Gaz',
+        'electricity': '⚡ Prąd', 
+        'cold_water': '💧 Woda zimna',
+        'hot_water': '🔴 Woda ciepła'
+    };
+    
+    // Najpierw obsłuż liczniki z wartością stałą
+    Object.keys(utilities).forEach(utilityId => {
+        const utility = utilities[utilityId];
+        if (utility && utility.fixed_amount_enabled && utility.fixed_amount) {
+            const fixedAmount = parseFloat(utility.fixed_amount) || 0;
+            
+            // Zaktualizuj pole sumy licznika dla wartości stałej
+            const utilityTotalField = document.getElementById(`utility_total_${utilityId}`);
+            if (utilityTotalField) {
+                utilityTotalField.value = fixedAmount.toLocaleString('pl-PL') + ' zł';
+            }
+            
+            // Dodaj do sumy grupowej
+            if (!groupedTotals[utility.type]) {
+                groupedTotals[utility.type] = {
+                    cost: 0,
+                    count: 0,
+                    meters: []
+                };
+            }
+            groupedTotals[utility.type].cost += fixedAmount;
+            groupedTotals[utility.type].count += 1;
+            groupedTotals[utility.type].meters.push({
+                name: utility.name || `Licznik #${utilityId}`,
+                cost: fixedAmount
+            });
+            
+            total += fixedAmount;
+        }
+    });
+    
+    // Następnie obsłuż normalne liczniki z odczytami
+    document.querySelectorAll('input[name^="readings["]').forEach(readingInput => {
+        const utilityId = readingInput.name.match(/readings\[([^\]]+)\]/)[1];
+        const currentReading = parseFloat(readingInput.value) || 0;
+        const utility = utilities[utilityId];
+        
+        // Pomiń liczniki z wartością stałą (już obsłużone)
+        if (utility && utility.fixed_amount_enabled && utility.fixed_amount) {
+            return;
+        }
+        
+        // Użyj poprzedniego odczytu jeśli istnieje, w przeciwnym razie stan początkowy
+        const previousReading = previousReadings[utilityId] || (utility ? (utility.initial_reading || 0) : 0);
+        const consumption = Math.max(0, currentReading - previousReading);
+        
+        // Oblicz koszt zużycia - użyj indywidualnej stawki licznika lub domyślnej dla typu
+        const rate = (utility && utility.rate !== null) ? utility.rate : (utilityRates[utility.type] || 0);
+        let consumptionCost = consumption * rate;
+        
+        // Zaktualizuj pole kosztu zużycia (tylko koszt zużycia, bez opłaty stałej)
+        const costField = document.getElementById(`cost_${utilityId}`);
+        if (costField) {
+            costField.value = consumptionCost.toFixed(3);
+        }
+        
+        // Dodaj opłatę stałą (oprócz wody zimnej)
+        let utilityCost = consumptionCost;
+        if (utility.type !== 'cold_water') {
+            const fixedCostInput = document.querySelector(`input[name="fixed_costs[${utilityId}]"]`);
+            if (fixedCostInput) {
+                const fixedCost = parseFloat(fixedCostInput.value) || 0;
+                utilityCost += fixedCost;
+            }
+        }
+        
+        // Zaktualizuj pole sumy licznika
+        const utilityTotalField = document.getElementById(`utility_total_${utilityId}`);
+        if (utilityTotalField) {
+            const roundedTotal = Math.round(utilityCost);
+            utilityTotalField.value = roundedTotal.toLocaleString('pl-PL') + ' zł';
+        }
+        
+        // Dodaj do sumy grupowej
+        if (!groupedTotals[utility.type]) {
+            groupedTotals[utility.type] = {
+                cost: 0,
+                count: 0,
+                meters: []
+            };
+        }
+        groupedTotals[utility.type].cost += utilityCost;
+        groupedTotals[utility.type].count += 1;
+        groupedTotals[utility.type].meters.push({
+            name: utility.name || `Licznik #${utilityId}`,
+            cost: utilityCost
+        });
+        
+        total += utilityCost;
+    });
+    
+    // Wyświetl sumy grupowe
+    updateGroupedTotals(groupedTotals, utilityTypeNames);
+    
+    // Zaktualizuj łączną sumę
+    document.getElementById('total-cost').textContent = 
+        total.toLocaleString('pl-PL', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        }) + ' zł';
+}
 
 function calculateTotal() {
     let total = 0;
@@ -388,10 +592,48 @@ function calculateTotal() {
         'hot_water': '🔴 Woda ciepła'
     };
     
-    // Oblicz sumę dla każdego licznika osobno
+    // Najpierw obsłuż liczniki z wartością stałą
+    Object.keys(utilities).forEach(utilityId => {
+        const utility = utilities[utilityId];
+        if (utility && utility.fixed_amount_enabled && utility.fixed_amount) {
+            const fixedAmount = parseFloat(utility.fixed_amount) || 0;
+            
+            // Zaktualizuj pole sumy licznika dla wartości stałej
+            const utilityTotalField = document.getElementById(`utility_total_${utilityId}`);
+            if (utilityTotalField) {
+                utilityTotalField.value = fixedAmount.toLocaleString('pl-PL') + ' zł';
+            }
+            
+            // Dodaj do sumy grupowej
+            if (!groupedTotals[utility.type]) {
+                groupedTotals[utility.type] = {
+                    cost: 0,
+                    count: 0,
+                    meters: []
+                };
+            }
+            groupedTotals[utility.type].cost += fixedAmount;
+            groupedTotals[utility.type].count += 1;
+            groupedTotals[utility.type].meters.push({
+                name: utility.name || `Licznik #${utilityId}`,
+                cost: fixedAmount
+            });
+            
+            total += fixedAmount;
+        }
+    });
+    
+    // Następnie obsłuż normalne liczniki z polami kosztów
     const costInputs = document.querySelectorAll('input[name^="costs["]');
     costInputs.forEach(input => {
         const utilityId = input.name.match(/costs\[([^\]]+)\]/)[1];
+        const utility = utilities[utilityId];
+        
+        // Pomiń liczniki z wartością stałą (już obsłużone)
+        if (utility && utility.fixed_amount_enabled && utility.fixed_amount) {
+            return;
+        }
+        
         const costValue = parseFloat(input.value) || 0;
         
         // Znajdź odpowiadającą opłatę stałą
@@ -409,7 +651,6 @@ function calculateTotal() {
         }
         
         // Dodaj do sumy grupowej
-        const utility = utilities[utilityId];
         if (utility) {
             const utilityType = utility.type;
             if (!groupedTotals[utilityType]) {
@@ -460,11 +701,18 @@ function updateGroupedTotals(groupedTotals, utilityTypeNames) {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'bg-white rounded-lg p-3 border border-blue-200';
             
-            let metersHtml = data.meters.map(meter => 
-                `<div class="text-xs text-gray-600 ml-4">
-                    • ${meter.name}: ${Math.round(meter.cost).toLocaleString('pl-PL')} zł
-                </div>`
-            ).join('');
+            let metersHtml = data.meters.map(meter => {
+                // Sprawdź czy to licznik z wartością stałą (nie ma consumption)
+                if (meter.consumption === undefined) {
+                    return `<div class="text-xs text-gray-600 ml-4">
+                        • ${meter.name}: Wartość stała = ${Math.round(meter.cost).toLocaleString('pl-PL')} zł
+                    </div>`;
+                } else {
+                    return `<div class="text-xs text-gray-600 ml-4">
+                        • ${meter.name}: ${Math.round(meter.cost).toLocaleString('pl-PL')} zł
+                    </div>`;
+                }
+            }).join('');
             
             groupDiv.innerHTML = `
                 <div class="flex justify-between items-center font-medium text-gray-900">
@@ -520,9 +768,10 @@ function setupAutoSave() {
             input.value = savedValue;
         }
         
-        // Zapisuj przy każdej zmianie
+        // Zapisuj przy każdej zmianie i przelicz koszty
         input.addEventListener('input', function() {
             saveFieldValue(fieldName, this.value);
+            calculateCosts(); // Automatyczne przeliczanie kosztów
         });
     });
     
@@ -539,7 +788,7 @@ function setupAutoSave() {
         // Zapisuj przy każdej zmianie
         input.addEventListener('input', function() {
             saveFieldValue(fieldName, this.value);
-            calculateTotal();
+            calculateTotal(); // Użyj calculateTotal() dla ręcznych zmian kosztów
         });
     });
     
@@ -553,10 +802,10 @@ function setupAutoSave() {
             input.value = savedValue;
         }
         
-        // Zapisuj przy każdej zmianie
+        // Zapisuj przy każdej zmianie i przelicz koszty
         input.addEventListener('input', function() {
             saveFieldValue(fieldName, this.value);
-            calculateTotal();
+            calculateCosts(); // Automatyczne przeliczanie kosztów
         });
     });
     
@@ -564,6 +813,9 @@ function setupAutoSave() {
     document.querySelector('form').addEventListener('submit', function() {
         clearDraftData();
     });
+    
+    // Automatyczne przeliczenie kosztów przy ładowaniu strony
+    calculateCosts();
 }
 
 // Polskie nazwy miesięcy
@@ -797,7 +1049,7 @@ function showPeriodNotification(periodText) {
 // Oblicz sumę przy ładowaniu strony
 document.addEventListener('DOMContentLoaded', function() {
     setupAutoSave();
-    calculateTotal();
+    calculateCosts(); // Automatyczne przeliczenie kosztów przy ładowaniu
     initializePolishCalendar();
 });
 </script>

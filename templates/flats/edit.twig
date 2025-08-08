@@ -171,6 +171,22 @@
                                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                             <p class="text-xs text-gray-500 mt-1">Pozostaw puste dla domyślnej stawki</p>
                                         </div>
+                                        <div>
+                                            <div class="flex items-center mb-2">
+                                                <input type="checkbox" name="utilities[{{ loop.index0 }}][fixed_amount_enabled]" id="fixed_amount_{{ loop.index0 }}" value="1" 
+                                                       {% if utility.fixed_amount_enabled ?? false %}checked{% endif %}
+                                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                                                       onchange="toggleFixedAmount(this)">
+                                                <label for="fixed_amount_{{ loop.index0 }}" class="ml-2 block text-sm font-medium text-gray-700">
+                                                    Wartość stała
+                                                </label>
+                                            </div>
+                                            <div id="fixed_amount_field_{{ loop.index0 }}" class="{% if not (utility.fixed_amount_enabled ?? false) %}hidden{% endif %}">
+                                                <input type="number" name="utilities[{{ loop.index0 }}][fixed_amount]" value="{{ utility.fixed_amount ?? '0.00' }}" step="0.01" min="0" placeholder="0.00"
+                                                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                                <p class="text-xs text-gray-500 mt-1">Podaj wartość stałą (zł)</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -271,6 +287,21 @@ function addUtility() {
                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                 <p class="text-xs text-gray-500 mt-1">Pozostaw puste dla domyślnej stawki</p>
             </div>
+            <div>
+                <div class="flex items-center mb-2">
+                    <input type="checkbox" name="utilities[${utilityCounter}][fixed_amount_enabled]" id="fixed_amount_${utilityCounter}" value="1" 
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                           onchange="toggleFixedAmount(this)">
+                    <label for="fixed_amount_${utilityCounter}" class="ml-2 block text-sm font-medium text-gray-700">
+                        Wartość stała
+                    </label>
+                </div>
+                <div id="fixed_amount_field_${utilityCounter}" class="hidden">
+                    <input type="number" name="utilities[${utilityCounter}][fixed_amount]" step="0.01" min="0" value="0.00" placeholder="0.00"
+                           class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <p class="text-xs text-gray-500 mt-1">Podaj wartość stałą (zł)</p>
+                </div>
+            </div>
         </div>
     `;
     
@@ -312,6 +343,8 @@ function renumberUtilities() {
         const fixedCostInput = utility.querySelector('input[name*="[fixed_cost]"]');
         const rateInput = utility.querySelector('input[name*="[rate]"]');
         const hiddenInput = utility.querySelector('input[type="hidden"]');
+        const fixedAmountCheckbox = utility.querySelector('input[name*="[fixed_amount_enabled]"]');
+        const fixedAmountInput = utility.querySelector('input[name*="[fixed_amount]"]');
         
         typeSelect.name = `utilities[${index}][type]`;
         nameInput.name = `utilities[${index}][name]`;
@@ -320,6 +353,19 @@ function renumberUtilities() {
         rateInput.name = `utilities[${index}][rate]`;
         if (hiddenInput) {
             hiddenInput.name = `utilities[${index}][id]`;
+        }
+        if (fixedAmountCheckbox) {
+            fixedAmountCheckbox.name = `utilities[${index}][fixed_amount_enabled]`;
+            fixedAmountCheckbox.id = `fixed_amount_${index}`;
+        }
+        if (fixedAmountInput) {
+            fixedAmountInput.name = `utilities[${index}][fixed_amount]`;
+        }
+        
+        // Zaktualizuj ID pola fixed_amount_field
+        const fixedAmountField = utility.querySelector('div[id^="fixed_amount_field_"]');
+        if (fixedAmountField) {
+            fixedAmountField.id = `fixed_amount_field_${index}`;
         }
     });
     
@@ -336,6 +382,23 @@ function updateRatePlaceholder(selectElement) {
         rateInput.placeholder = `Domyślna: ${defaultRate} zł`;
     } else if (rateInput) {
         rateInput.placeholder = 'Domyślna';
+    }
+}
+
+function toggleFixedAmount(checkbox) {
+    const utilityItem = checkbox.closest('.utility-item');
+    const fieldId = checkbox.id.replace('fixed_amount_', 'fixed_amount_field_');
+    const field = document.getElementById(fieldId);
+    
+    if (checkbox.checked) {
+        field.classList.remove('hidden');
+    } else {
+        field.classList.add('hidden');
+        // Wyczyść pole gdy checkbox jest odznaczony
+        const input = field.querySelector('input[type="number"]');
+        if (input) {
+            input.value = '0.00';
+        }
     }
 }
 
